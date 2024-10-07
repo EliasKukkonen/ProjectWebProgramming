@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> <!-- Ensures proper character encoding -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectWork with Sidebar</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <link rel="stylesheet" href="CSSStyling/MapView.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="TextBox">
+                <h1>Drag and drop boxes to get additional info about Finland</h1>
+            </div>
+            <!-- Box 1 -->
+            <div class="box" draggable="true" id="migration-data-box">
+                <h2>Migration Statistics</h2>
+                <!-- You can add more content here, such as charts, lists, etc. -->
+            </div>
+            
+            <!-- Box 2 -->
+            <div class="box" draggable="true" id="birth-death-data-box">
+                <h2>Birth and Death Data</h2>
+                <!-- Add more controls as needed -->
+            </div>
+            <!-- Box 3-->
+            <div class="box" draggable="true" id="population-data-box">
+            <h2>Population data</h2>
+        </div>
+
+    
+            
+            
+        </div>
+        
+        <!-- Map Container -->
+        <div id="map"></div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    
+    <!-- Your Custom JS -->
+    <script src="js/JSONScripts.js" defer></script> <!-- 'defer' ensures script runs after DOM is parsed -->
+</body>
+</html>
