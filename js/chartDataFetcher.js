@@ -3,6 +3,7 @@
 /**
  * Function to fetch data from a given URL.
  * @param {string} url - The API endpoint URL.
+ * @param {Object} options - Fetch options (e.g., method, headers, body).
  * @returns {Object} - The JSON response from the API.
  */
 async function fetchData(url, options = {}) {
@@ -16,7 +17,7 @@ async function fetchData(url, options = {}) {
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Fetch Error:', error);
         throw error;
     }
 }
@@ -64,17 +65,12 @@ async function fetchPopulationData() {
         }
     };
 
-    try {
-        const data = await fetchData(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(query)
-        });
-        return data;
-    } catch (error) {
-        console.error('Error fetching population data:', error);
-        throw error;
-    }
+    const data = await fetchData(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(query)
+    });
+    return data;
 }
 
 /**
@@ -145,45 +141,49 @@ async function fetchBirthAndDeathData() {
         "response": { "format": "json-stat2" }
     };
 
-    try {
-        // Fetch births and deaths concurrently
-        const [birthData, deathData] = await Promise.all([
-            fetchData(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(birthQuery)
-            }),
-            fetchData(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(deathQuery)
-            })
-        ]);
+    // Fetch births and deaths concurrently
+    const [birthData, deathData] = await Promise.all([
+        fetchData(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(birthQuery)
+        }),
+        fetchData(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(deathQuery)
+        })
+    ]);
 
-        if (birthData && deathData) {
-            const parsedYears = Object.values(birthData.dimension.Vuosi.category.label);
-            const births = birthData.value;
-            const deaths = deathData.value;
+    if (birthData && deathData) {
+        const parsedYears = Object.values(birthData.dimension.Vuosi.category.label);
+        const births = birthData.value;
+        const deaths = deathData.value;
 
-            return { years: parsedYears, births, deaths };
-        } else {
-            throw new Error('Incomplete birth or death data received.');
-        }
-    } catch (error) {
-        console.error('Error fetching birth and death data:', error);
-        throw error;
+        return { years: parsedYears, births, deaths };
+    } else {
+        throw new Error('Incomplete birth or death data received.');
     }
 }
 
 /**
  * Function to fetch Employment Rate data from the StatFin API.
- * @returns {number} - Employment rate percentage.
+ * @returns {Object} - An object containing employment, unemployment rates, and dependency ratio.
  */
 async function fetchEmploymentRateData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/tyokay/statfin_tyokay_pxt_115x.px";
 
-    const query = {
+    const years = ["2021"]; // Fetching data for the latest year
+
+    const employmentQuery = {
         "query": [
+            {
+                "code": "Vuosi",
+                "selection": {
+                    "filter": "item",
+                    "values": years
+                }
+            },
             {
                 "code": "Alue",
                 "selection": {
@@ -195,7 +195,7 @@ async function fetchEmploymentRateData() {
                 "code": "Tiedot",
                 "selection": {
                     "filter": "item",
-                    "values": ["tyollisyysaste"] // Employment rate data code
+                    "values": ["tyollisyysaste", "tyottomyysaste", "taloudellinenhuoltosuhde"] // Employment indicators
                 }
             }
         ],
@@ -204,18 +204,17 @@ async function fetchEmploymentRateData() {
         }
     };
 
-    try {
-        const data = await fetchData(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(query)
-        });
+    const data = await fetchData(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(employmentQuery)
+    });
 
-        // Extract employment rate
-        const employmentRate = data.value[0]; // Assuming single value
-        return employmentRate;
-    } catch (error) {
-        console.error('Error fetching employment rate data:', error);
-        throw error;
-    }
+    // Extract employment data
+    const employmentData = data.value; // [tyollisyysaste, tyottomyysaste, taloudellinenhuoltosuhde]
+    const employmentRate = employmentData[0];
+    const unemploymentRate = employmentData[1];
+    const dependencyRatio = employmentData[2];
+
+    return { employmentRate, unemploymentRate, dependencyRatio };
 }

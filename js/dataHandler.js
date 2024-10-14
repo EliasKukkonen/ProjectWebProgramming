@@ -1,6 +1,21 @@
 // js/dataHandler.js
 
-// Function to handle each feature (municipality) on the map
+// Add global variables
+window.MunicipalityChange = {};
+window.positiveMigrationData = {};
+window.negativeMigrationData = {};
+window.populationDataByMunicipality = {};
+window.birthDataByMunicipality = {};
+window.deathDataByMunicipality = {};
+
+// **New Global Variables for Employment Data**
+window.employmentRateByMunicipality = {};
+window.unemploymentRateByMunicipality = {};
+window.dependencyRatioByMunicipality = {};
+
+/**
+ * Function to handle each feature (municipality) on the map
+ */
 window.onEachFeature = async (feature, layer) => {
     if (!feature.properties.kunta) return;
 
@@ -33,29 +48,28 @@ window.onEachFeature = async (feature, layer) => {
                 </div>`
             ).openPopup();
         } else if (window.selectedDataType === 'birth-death') {
-            // Fetch birth and death data
-            const data = await fetchBirthAndDeathData(municipalityCode);
-            if (!data) {
+            // Display pre-fetched birth and death data
+            const births = window.birthDataByMunicipality[municipalityCode];
+            const deaths = window.deathDataByMunicipality[municipalityCode];
+
+            if (births === undefined || deaths === undefined) {
                 alert('Birth and death data not available for this municipality.');
                 return;
             }
 
-            // Get the latest year's data
-            const latestYearIndex = data.years.length - 1;
-            const latestYear = data.years[latestYearIndex];
-            const latestBirths = data.births[latestYearIndex];
-            const latestDeaths = data.deaths[latestYearIndex];
+            const netChange = births - deaths;
 
             layer.bindPopup(
                 `<div>
-                <ul>
-                    <li><strong>Municipality:</strong> ${municipalityName}</li>
-                    <li><strong>Year:</strong> ${latestYear}</li>
-                    <li><strong>Births:</strong> ${latestBirths}</li>
-                    <li><strong>Deaths:</strong> ${latestDeaths}</li>
-                </ul>
-                <button id="view-chart-${municipalityCode}">View Chart</button>
-            </div>`
+                    <ul>
+                        <li><strong>Municipality:</strong> ${municipalityName}</li>
+                        <li><strong>Year:</strong> 2021</li>
+                        <li><strong>Births:</strong> ${births}</li>
+                        <li><strong>Deaths:</strong> ${deaths}</li>
+                        <li><strong>Net Change:</strong> ${netChange}</li>
+                    </ul>
+                    <button id="view-chart-${municipalityCode}">View Chart</button>
+                </div>`
             ).openPopup();
         } else if (window.selectedDataType === 'population') {
             const population = window.populationDataByMunicipality[municipalityCode];
@@ -67,12 +81,34 @@ window.onEachFeature = async (feature, layer) => {
 
             layer.bindPopup(
                 `<div>
-                <ul>
-                    <li><strong>Municipality:</strong> ${municipalityName}</li>
-                    <li><strong>Population (2021):</strong> ${population.toLocaleString()}</li>
-                </ul>
-                <button id="view-chart-${municipalityCode}">View Chart</button>
-            </div>`
+                    <ul>
+                        <li><strong>Municipality:</strong> ${municipalityName}</li>
+                        <li><strong>Population (2021):</strong> ${population.toLocaleString()}</li>
+                    </ul>
+                    <button id="view-chart-${municipalityCode}">View Chart</button>
+                </div>`
+            ).openPopup();
+        } else if (window.selectedDataType === 'employment') {
+            const employmentRate = window.employmentRateByMunicipality[municipalityCode];
+            const unemploymentRate = window.unemploymentRateByMunicipality[municipalityCode];
+            const dependencyRatio = window.dependencyRatioByMunicipality[municipalityCode];
+
+            if (employmentRate === undefined || unemploymentRate === undefined || dependencyRatio === undefined) {
+                alert('Employment data not available for this municipality.');
+                return;
+            }
+
+            layer.bindPopup(
+                `<div>
+                    <ul>
+                        <li><strong>Municipality:</strong> ${municipalityName}</li>
+                        <li><strong>Year:</strong> 2021</li>
+                        <li><strong>Employment Rate:</strong> ${employmentRate}%</li>
+                        <li><strong>Unemployment Rate:</strong> ${unemploymentRate}%</li>
+                        <li><strong>Dependency Ratio:</strong> ${dependencyRatio}</li>
+                    </ul>
+                    <button id="view-chart-${municipalityCode}">View Chart</button>
+                </div>`
             ).openPopup();
         }
     });
@@ -80,7 +116,9 @@ window.onEachFeature = async (feature, layer) => {
     layer.bindTooltip(municipalityName);
 };
 
-// Function to determine style based on selected data type
+/**
+ * Function to determine style based on selected data type
+ */
 window.getStyle = (feature) => {
     const municipalityCodeRaw = feature.properties.kunta;
     const municipalityCode = municipalityCodeRaw.padStart(3, '0');
@@ -106,7 +144,7 @@ window.getStyle = (feature) => {
                 fillOpacity: 0.7
             };
         }
-    } else {
+    } else if (window.selectedDataType === 'migration') {
         // Styling logic for migration data
         const municipalityCodeFull = 'KU' + municipalityCode;
         const positiveMigrationValue = window.positiveMigrationData[municipalityCodeFull];
@@ -133,10 +171,63 @@ window.getStyle = (feature) => {
                 fillOpacity: 0.7
             };
         }
+    } else if (window.selectedDataType === 'birth-death') {
+        const births = window.birthDataByMunicipality[municipalityCode];
+        const deaths = window.deathDataByMunicipality[municipalityCode];
+
+        if (births !== undefined && deaths !== undefined) {
+            const netChange = births - deaths;
+            const color = getColorForBirthDeath(netChange);
+
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else if (window.selectedDataType === 'employment') {
+        const employmentRate = window.employmentRateByMunicipality[municipalityCode];
+
+        if (employmentRate !== undefined) {
+            // Define a color scale based on employment rate
+            let color = getColorForEmployment(employmentRate);
+
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else {
+        // Default style
+        return {
+            weight: 1,
+            color: 'black',
+            fillColor: '#ccc',
+            fillOpacity: 0.7
+        };
     }
 };
 
-// Function to determine color based on population
+/**
+ * Function to determine color based on population
+ */
 function getColorForPopulation(population) {
     return population > 100000 ? '#800026' :
            population > 50000  ? '#BD0026' :
@@ -148,7 +239,34 @@ function getColorForPopulation(population) {
                                  '#FFEDA0';
 }
 
-// Function to fetch and process map data
+/**
+ * Function to determine color based on net birth-death
+ */
+function getColorForBirthDeath(netChange) {
+    return netChange > 1000 ? '#006400' : // Dark Green for high positive
+           netChange > 500  ? '#228B22' : // Forest Green
+           netChange > 0    ? '#32CD32' : // Lime Green
+           netChange > -500 ? '#FFD700' : // Gold for slight negative
+           netChange > -1000? '#FFA500' : // Orange
+           netChange > -2000? '#FF8C00' : // Dark Orange
+                                 '#FF0000';  // Red for high negative
+}
+
+/**
+ * Function to determine color based on employment rate
+ */
+function getColorForEmployment(employmentRate) {
+    return employmentRate > 80 ? '#006400' : // Dark Green for high employment
+           employmentRate > 60 ? '#228B22' : // Forest Green
+           employmentRate > 40 ? '#32CD32' : // Lime Green
+           employmentRate > 20 ? '#FFD700' : // Gold for moderate employment
+           employmentRate > 0  ? '#FFA500' : // Orange
+                                 '#FF0000';  // Red for very low employment
+}
+
+/**
+ * Function to fetch and process map data
+ */
 async function FetchingData() {
     try {
         // Fetch GeoJSON data for municipalities
@@ -181,19 +299,30 @@ async function FetchingData() {
             window.negativeMigrationData[code] = negativeValues[idx];
         });
 
-        // Create the GeoJSON layer after fetching migration data
+        // **Fetch Employment Data**
+        const employmentData = await fetchEmploymentData();
+        if (employmentData) {
+            window.processEmploymentData(employmentData);
+        } else {
+            console.error('Employment data could not be fetched.');
+        }
+
+        // Create the GeoJSON layer after fetching all necessary data
         window.GeoJsonLayer = L.geoJSON(geoData, {
             onEachFeature: window.onEachFeature,
             style: window.getStyle,
         }).addTo(window.map);
 
         window.map.fitBounds(window.GeoJsonLayer.getBounds());
+
     } catch (error) {
         console.error('Error fetching map data:', error);
     }
 }
 
-// Function to fetch population data
+/**
+ * Function to fetch population data
+ */
 async function fetchPopulationData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/vaerak/statfin_vaerak_pxt_11rm.px";
 
@@ -246,13 +375,16 @@ async function fetchPopulationData() {
 
         const populationData = await response.json();
         return populationData;
+
     } catch (error) {
         console.error('Error fetching population data:', error);
         return null;
     }
 }
 
-// Function to process population data
+/**
+ * Function to process population data
+ */
 window.processPopulationData = (populationData) => {
     const areaDimension = populationData.dimension.Alue.category;
     const areas = areaDimension.index;
@@ -265,19 +397,14 @@ window.processPopulationData = (populationData) => {
     });
 };
 
-// Function to fetch birth and death data
-window.fetchBirthAndDeathData = async (municipalityCode) => {
-    // Prefix the municipality code with 'KU'
-    const areaCode = 'KU' + municipalityCode;
-
+/**
+ * Function to fetch birth and death data for all municipalities
+ */
+async function fetchAllBirthAndDeathData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/synt/statfin_synt_pxt_12dy.px";
 
-    const years = [
-        "2000", "2001", "2002", "2003", "2004", "2005",
-        "2006", "2007", "2008", "2009", "2010", "2011",
-        "2012", "2013", "2014", "2015", "2016", "2017",
-        "2018", "2019", "2020", "2021"
-    ];
+    // Define the latest year
+    const latestYear = "2021"; // Update this if needed
 
     const birthQuery = {
         "query": [
@@ -285,14 +412,14 @@ window.fetchBirthAndDeathData = async (municipalityCode) => {
                 "code": "Vuosi",
                 "selection": {
                     "filter": "item",
-                    "values": years
+                    "values": [latestYear]
                 }
             },
             {
                 "code": "Alue",
                 "selection": {
                     "filter": "item",
-                    "values": [areaCode]
+                    "values": Object.keys(window.MunicipalityChange).map(code => 'KU' + code)
                 }
             },
             {
@@ -307,9 +434,21 @@ window.fetchBirthAndDeathData = async (municipalityCode) => {
     };
 
     const deathQuery = {
-        ...birthQuery,
         "query": [
-            ...birthQuery.query.slice(0, 2),
+            {
+                "code": "Vuosi",
+                "selection": {
+                    "filter": "item",
+                    "values": [latestYear]
+                }
+            },
+            {
+                "code": "Alue",
+                "selection": {
+                    "filter": "item",
+                    "values": Object.keys(window.MunicipalityChange).map(code => 'KU' + code)
+                }
+            },
             {
                 "code": "Tiedot",
                 "selection": {
@@ -317,12 +456,17 @@ window.fetchBirthAndDeathData = async (municipalityCode) => {
                     "values": ["vm11"] // Deaths data code
                 }
             }
-        ]
+        ],
+        "response": { "format": "json-stat2" }
     };
 
     // Function to fetch data
-    const fetchData = async (options) => {
-        const response = await fetch(url, options);
+    const fetchData = async (query) => {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(query)
+        });
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API Error Response:', errorText);
@@ -331,37 +475,354 @@ window.fetchBirthAndDeathData = async (municipalityCode) => {
         return await response.json();
     };
 
-    // Fetch birth and death data concurrently
     try {
         const [birthData, deathData] = await Promise.all([
-            fetchData({
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(birthQuery)
-            }),
-            fetchData({
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(deathQuery)
-            })
+            fetchData(birthQuery),
+            fetchData(deathQuery)
         ]);
 
-        if (birthData && deathData) {
-            const years = Object.values(birthData.dimension.Vuosi.category.label);
-            const births = birthData.value;
-            const deaths = deathData.value;
+        // Process Birth Data
+        const birthAreas = birthData.dimension.Alue.category.index;
+        const birthValues = birthData.value;
 
-            return { years, births, deaths };
-        } else {
-            return null;
-        }
+        Object.keys(birthAreas).forEach((areaCode, idx) => {
+            const code = areaCode.replace('KU', '');
+            const births = birthValues[idx];
+            window.birthDataByMunicipality[code] = births;
+        });
+
+        // Process Death Data
+        const deathAreas = deathData.dimension.Alue.category.index;
+        const deathValues = deathData.value;
+
+        Object.keys(deathAreas).forEach((areaCode, idx) => {
+            const code = areaCode.replace('KU', '');
+            const deaths = deathValues[idx];
+            window.deathDataByMunicipality[code] = deaths;
+        });
+
+        console.log('Birth and Death data fetched and processed.');
+
     } catch (error) {
         console.error('Error fetching birth and death data:', error);
+    }
+}
+
+/**
+ * Function to fetch employment-related data
+ */
+async function fetchEmploymentData() {
+    const employmentDataURL = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/tyokay/statfin_tyokay_pxt_115x.px"; // Replace with the correct URL if different
+
+    const employmentQuery = {
+        "query": [
+            {
+                "code": "Vuosi",
+                "selection": {
+                    "filter": "item",
+                    "values": ["2021"] // Latest year; adjust if needed
+                }
+            },
+            {
+                "code": "Alue",
+                "selection": {
+                    "filter": "item",
+                    "values": Object.keys(window.MunicipalityChange).map(code => 'KU' + code)
+                }
+            },
+            {
+                "code": "Tiedot",
+                "selection": {
+                    "filter": "item",
+                    "values": ["tyollisyysaste", "tyottomyysaste", "taloudellinenhuoltosuhde"] // Employment indicators
+                }
+            }
+        ],
+        "response": { "format": "json-stat2" }
+    };
+
+    try {
+        const response = await fetch(employmentDataURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(employmentQuery)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error Response (Employment):', errorText);
+            throw new Error(`Failed to fetch employment data: ${response.status} ${response.statusText}`);
+        }
+
+        const employmentData = await response.json();
+        return employmentData;
+
+    } catch (error) {
+        console.error('Error fetching employment data:', error);
         return null;
+    }
+}
+
+/**
+ * Function to process employment data
+ */
+window.processEmploymentData = (employmentData) => {
+    if (!employmentData || !employmentData.dimension || !employmentData.value) {
+        console.error('Invalid employment data structure.');
+        return;
+    }
+
+    const areaDimension = employmentData.dimension.Alue.category;
+    const areas = areaDimension.index;
+    const values = employmentData.value;
+
+    // Assuming the data is structured with Tiedot as the second dimension
+    // Find the index for each "Tiedot" variable
+    const tiedotIndex = employmentData.dimension.Tiedot.category.index;
+
+    Object.keys(areas).forEach((areaCode, idx) => {
+        const code = areaCode.replace('KU', '');
+        const areaValueIndex = areas[areaCode];
+
+       
+        const baseIndex = idx * 3; // 3 variables per municipality
+
+        const employmentRate = values[baseIndex]; // tyollisyysaste
+        const unemploymentRate = values[baseIndex + 1]; // tyottomyysaste
+        const dependencyRatio = values[baseIndex + 2]; // taloudellinenhuoltosuhde
+
+        window.employmentRateByMunicipality[code] = employmentRate;
+        window.unemploymentRateByMunicipality[code] = unemploymentRate;
+        window.dependencyRatioByMunicipality[code] = dependencyRatio;
+    });
+
+    console.log('Employment data fetched and processed.');
+};
+
+/**
+ * Function to determine style based on selected data type
+ */
+window.getStyle = (feature) => {
+    const municipalityCodeRaw = feature.properties.kunta;
+    const municipalityCode = municipalityCodeRaw.padStart(3, '0');
+
+    if (window.selectedDataType === 'population') {
+        const population = window.populationDataByMunicipality[municipalityCode];
+
+        if (population !== undefined) {
+            // Define a color scale based on population
+            let color = getColorForPopulation(population);
+
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else if (window.selectedDataType === 'migration') {
+        // Styling logic for migration data
+        const municipalityCodeFull = 'KU' + municipalityCode;
+        const positiveMigrationValue = window.positiveMigrationData[municipalityCodeFull];
+        const negativeMigrationValue = window.negativeMigrationData[municipalityCodeFull];
+
+        if (positiveMigrationValue !== undefined && negativeMigrationValue !== undefined) {
+            let ratio = positiveMigrationValue / negativeMigrationValue;
+
+            let hue = Math.pow(ratio, 3) * 60;
+            hue = Math.min(hue, 120);
+
+            const color = `hsl(${hue}, 75%, 50%)`;
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else if (window.selectedDataType === 'birth-death') {
+        const births = window.birthDataByMunicipality[municipalityCode];
+        const deaths = window.deathDataByMunicipality[municipalityCode];
+
+        if (births !== undefined && deaths !== undefined) {
+            const netChange = births - deaths;
+            const color = getColorForBirthDeath(netChange);
+
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else if (window.selectedDataType === 'employment') {
+        const employmentRate = window.employmentRateByMunicipality[municipalityCode];
+
+        if (employmentRate !== undefined) {
+            // Define a color scale based on employment rate
+            let color = getColorForEmployment(employmentRate);
+
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: color,
+                fillOpacity: 0.7
+            };
+        } else {
+            return {
+                weight: 1,
+                color: 'black',
+                fillColor: '#ccc',
+                fillOpacity: 0.7
+            };
+        }
+    } else {
+        // Default style
+        return {
+            weight: 1,
+            color: 'black',
+            fillColor: '#ccc',
+            fillOpacity: 0.7
+        };
     }
 };
 
-// Initialize Data Fetching and Processing
+/**
+ * Function to determine color based on population
+ */
+function getColorForPopulation(population) {
+    return population > 100000 ? '#800026' :
+           population > 50000  ? '#BD0026' :
+           population > 20000  ? '#E31A1C' :
+           population > 10000  ? '#FC4E2A' :
+           population > 5000   ? '#FD8D3C' :
+           population > 2000   ? '#FEB24C' :
+           population > 1000   ? '#FED976' :
+                                 '#FFEDA0';
+}
+
+/**
+ * Function to determine color based on net birth-death
+ */
+function getColorForBirthDeath(netChange) {
+    return netChange > 1000 ? '#006400' : // Dark Green for high positive
+           netChange > 500  ? '#228B22' : // Forest Green
+           netChange > 0    ? '#32CD32' : // Lime Green
+           netChange > -500 ? '#FFD700' : // Gold for slight negative
+           netChange > -1000? '#FFA500' : // Orange
+           netChange > -2000? '#FF8C00' : // Dark Orange
+                                 '#FF0000';  // Red for high negative
+}
+
+/**
+ * Function to determine color based on employment rate
+ */
+function getColorForEmployment(employmentRate) {
+    return employmentRate > 80 ? '#006400' : // Dark Green for high employment
+           employmentRate > 60 ? '#228B22' : // Forest Green
+           employmentRate > 40 ? '#32CD32' : // Lime Green
+           employmentRate > 20 ? '#FFD700' : // Gold for moderate employment
+           employmentRate > 0  ? '#FFA500' : // Orange
+                                 '#FF0000';  // Red for very low employment
+}
+
+
+function addLegend() {
+    window.legend = L.control({ position: 'bottomright' });
+
+    window.legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+
+        if (window.selectedDataType === 'birth-death') {
+            div.innerHTML += '<strong>Net Birth-Death</strong><br>';
+            const gradesBD = [-2000, -1000, -500, 0, 500, 1000];
+            const labelsBD = [];
+
+            for (let i = 0; i < gradesBD.length; i++) {
+                const from = gradesBD[i];
+                const to = gradesBD[i + 1];
+
+                labelsBD.push(
+                    '<i style="background:' + getColorForBirthDeath(from + 1) + '"></i> ' +
+                    from + (to ? '&ndash;' + to : '+'));
+            }
+
+            div.innerHTML += labelsBD.join('<br>');
+        } else if (window.selectedDataType === 'employment') {
+            div.innerHTML += '<strong>Employment Rate (%)</strong><br>';
+            const gradesEmp = [0, 20, 40, 60, 80, 100];
+            const labelsEmp = [];
+
+            for (let i = 0; i < gradesEmp.length; i++) {
+                const from = gradesEmp[i];
+                const to = gradesEmp[i + 1];
+
+                labelsEmp.push(
+                    '<i style="background:' + getColorForEmployment(from + 1) + '"></i> ' +
+                    from + (to ? '&ndash;' + to : '+'));
+            }
+
+            div.innerHTML += labelsEmp.join('<br>');
+        } else {
+            // Existing legends for other data types
+            div.innerHTML += '<strong>Map Legend</strong><br>';
+            // Add legends for 'population' and 'migration' as needed
+
+            if (window.selectedDataType === 'population') {
+                div.innerHTML += '<strong>Population</strong><br>';
+                const gradesPop = [0, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+                const labelsPop = [];
+
+                for (let i = 0; i < gradesPop.length; i++) {
+                    const from = gradesPop[i];
+                    const to = gradesPop[i + 1];
+
+                    labelsPop.push(
+                        '<i style="background:' + getColorForPopulation(from + 1) + '"></i> ' +
+                        from + (to ? '&ndash;' + to : '+'));
+                }
+
+                div.innerHTML += labelsPop.join('<br>');
+            }
+
+            if (window.selectedDataType === 'migration') {
+                div.innerHTML += '<strong>Migration Ratio</strong><br>';
+                // Assuming hue-based colors; provide a description or a gradient
+                div.innerHTML += '<i style="background: hsl(0, 75%, 50%)"></i> High Out-Migration<br>';
+                div.innerHTML += '<i style="background: hsl(120, 75%, 50%)"></i> High In-Migration<br>';
+            }
+        }
+
+        return div;
+    };
+
+    window.legend.addTo(window.map);
+}
+
+/**
+ * Initialize Data Fetching and Processing
+ */
 async function initializeData() {
     await FetchingData();
 
@@ -371,6 +832,25 @@ async function initializeData() {
     } else {
         console.error('Population data could not be fetched.');
     }
+
+    // Fetch Birth and Death Data for All Municipalities
+    await fetchAllBirthAndDeathData();
+
+    // **Fetch Employment Data**
+    const employmentData = await fetchEmploymentData();
+    if (employmentData) {
+        window.processEmploymentData(employmentData);
+    } else {
+        console.error('Employment data could not be fetched.');
+    }
+
+    // Optionally, redraw the GeoJsonLayer to apply new styles
+    if (window.GeoJsonLayer) {
+        window.GeoJsonLayer.setStyle(window.getStyle);
+    }
+
+    // Optionally, add a legend if handling "birth-death" or "employment"
+    addLegend();
 }
 
 // Start data initialization

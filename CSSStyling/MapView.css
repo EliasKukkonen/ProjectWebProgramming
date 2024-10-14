@@ -22,6 +22,8 @@
     overflow-y: auto; /* Scroll if content overflows */
     border-right: 1px solid #75a9dc; /* Separator line */
     transition: width 0.3s ease;
+    position: relative; /* Ensure z-index works */
+    z-index: 10; /* Higher than map */
 }
 
 /* Individual box styling within the sidebar */
@@ -32,22 +34,30 @@
     padding: 15px;
     margin-bottom: 20px; /* Space between boxes */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    cursor: pointer; /* Indicate clickable */
+    transition: transform 0.2s, border-color 0.2s;
 }
 
+.box:active, .box.active {
+    border-color: #007BFF; /* Highlight active box */
+    transform: scale(1.05);
+}
+
+/* TextBox styling */
 .TextBox {
     background-color: #5287bc;
     color: #ffffff;
     margin-bottom: 20px;
-}
-
-.box:active {
-    cursor: grabbing; /* Indicate dragging */
+    padding: 15px;
+    border-radius: 5px;
 }
 
 /* Map container styling */
 #map {
     flex: 1; /* Take up remaining space */
     height: 100vh; /* Ensure the map takes full viewport height */
+    position: relative;
+    z-index: 5; /* Lower than sidebar */
 }
 
 /* Responsive Design */
@@ -63,10 +73,18 @@
         height: 200px;
         border-right: none;
         border-bottom: 1px solid #75a9dc;
+        z-index: 10; /* Ensure sidebar stays above map */
     }
 
     #map {
         height: calc(100vh - 200px);
+    }
+
+    /* Ensure data boxes are not overlapped by charts or other elements */
+    .chart-container {
+        width: 100%;
+        margin-top: 20px;
+        z-index: 5;
     }
 }
 
@@ -74,6 +92,7 @@
 @media (max-width: 480px) {
     .sidebar {
         padding: 10px;
+        height: 180px;
     }
 
     .box {

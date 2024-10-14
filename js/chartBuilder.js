@@ -4,7 +4,7 @@
  * Function to build and render the chart based on the selected data type.
  */
 async function buildChart() {
-  
+    try {
         if (window.selectedDataType === 'population') {
             // Fetch Population Data
             const populationData = await fetchPopulationData();
@@ -58,7 +58,7 @@ async function buildChart() {
             new frappe.Chart("#chart", {
                 title: `Births and Deaths in ${window.selectedMunicipalityName}`,
                 data: chartData,
-                type: 'axis-mixed', // Mixed chart type
+                type: 'bar', // Mixed chart type
                 height: 450,
                 colors: ['#63d0ff', '#363636'],
                 axisOptions: {
@@ -115,27 +115,54 @@ async function buildChart() {
             });
 
         } else if (window.selectedDataType === 'employment') {
-            // Fetch Employment Rate Data
-            const employmentRate = await fetchEmploymentRateData();
+            // Fetch Employment Data
+            const employmentData = await fetchEmploymentRateData();
 
-            // Prepare data for the pie chart
-            const chartData = {
-                labels: ["Employed", "Unemployed"],
+            const employmentRate = employmentData.employmentRate;
+            const unemploymentRate = employmentData.unemploymentRate;
+            const dependencyRatio = employmentData.dependencyRatio;
+
+            // Prepare data for Employment Rate and Unemployment Rate
+            const chartDataRates = {
+                labels: ["Employment Rate (%)", "Unemployment Rate (%)"],
                 datasets: [
                     {
-                        values: [employmentRate, 100 - employmentRate],
+                        values: [employmentRate, unemploymentRate],
                         colors: ['#1E90FF', '#FF6347']
                     }
                 ]
             };
 
-            // Create the Employment Rate Pie Chart
-            new frappe.Chart("#chart", {
-                title: `Employment Rate in ${window.selectedMunicipalityName} (2021)`,
-                data: chartData,
+            // Create the Employment Rates Pie Chart
+            new frappe.Chart("#chart-rates", {
+                title: `Employment Statistics in ${window.selectedMunicipalityName} (2021)`,
+                data: chartDataRates,
                 type: 'pie', // Pie chart type
                 height: 450,
                 colors: ['#1E90FF', '#FF6347']
+            });
+
+            // Prepare data for Dependency Ratio
+            const chartDataDependency = {
+                labels: ["Dependency Ratio"],
+                datasets: [
+                    {
+                        values: [dependencyRatio],
+                        colors: ['#8A2BE2']
+                    }
+                ]
+            };
+
+            // Create the Dependency Ratio Gauge Chart (Using Bar Chart as Frappe doesn't have Gauge)
+            new frappe.Chart("#chart-dependency", {
+                title: `Dependency Ratio in ${window.selectedMunicipalityName} (2021)`,
+                data: chartDataDependency,
+                type: 'bar', // Using bar chart to represent single value
+                height: 450,
+                colors: ['#8A2BE2'],
+                axisOptions: {
+                    xIsSeries: 1
+                }
             });
 
         } else {
@@ -143,9 +170,12 @@ async function buildChart() {
             alert('Unknown data type selected.');
             console.warn('Selected Data Type:', window.selectedDataType);
         }
-    
+    } catch (error) {
+        console.error('Error building chart:', error);
+        alert('An error occurred while building the chart.');
+    }
+}
 
-};
 /**
  * Function to download the chart as an SVG file.
  */
@@ -242,7 +272,15 @@ function downloadChartPNG() {
 }
 
 /**
- * Attach event listeners to existing download buttons.
+ * Function to build the chart and attach download listeners when the page is fully loaded.
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    await buildChart();
+    attachDownloadListeners();
+});
+
+/**
+ * Function to attach event listeners to existing download buttons.
  */
 function attachDownloadListeners() {
     const downloadPngButton = document.getElementById('download-chart-png');
@@ -275,16 +313,3 @@ function attachDownloadListeners() {
         console.warn('Navigation button with ID "navigation" not found.');
     }
 }
-
-/**
- * Function to build the chart and attach download listeners when the page is fully loaded.
- */
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        await buildChart();
-        attachDownloadListeners();
-    } catch (error) {
-        console.error('Error during chart initialization:', error);
-        alert('Failed to initialize chart. Please try again later.');
-    }
-});
