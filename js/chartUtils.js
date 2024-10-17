@@ -3,6 +3,7 @@
 /**
  * Function to parse URL parameters.
  * Returns an object containing key-value pairs of the URL parameters.
+ * From lecture 6
  */
 function getQueryParams() {
     const params = {};
@@ -21,13 +22,13 @@ function getQueryParams() {
 function initializeGlobals() {
     const params = getQueryParams();
     
-    // Retrieve and set global variables
-    window.selectedMunicipalityCodeRaw = params.code; // e.g., '001'
+  
+    window.selectedMunicipalityCodeRaw = params.code; 
     window.selectedMunicipalityName = params.name || 'Unknown Municipality';
     window.selectedDataType = params.dataType || 'population'; // Default to 'population' if not specified
     
-    // Prefix 'KU' to the raw municipality code to match API requirements.
-    window.selectedMunicipalityCode = 'KU' + (window.selectedMunicipalityCodeRaw || '').padStart(3, '0'); // e.g., 'KU001'
+    
+    window.selectedMunicipalityCode = 'KU' + (window.selectedMunicipalityCodeRaw || '').padStart(3, '0'); 
     
     // Log for debugging
     console.log('Initialized Globals:', {
@@ -41,11 +42,7 @@ function initializeGlobals() {
 // Initialize globals on script load
 initializeGlobals();
 
-/**
- * Function to navigate to the chart page with selected data type.
- * @param {string} municipalityCode - The code of the municipality.
- * @param {string} municipalityName - The name of the municipality.
- */
+
 function viewChart(municipalityCode, municipalityName) {
     const encodedName = encodeURIComponent(municipalityName);
     const chartUrl = `charts.html?code=${municipalityCode}&name=${encodedName}&dataType=${window.selectedDataType}`;

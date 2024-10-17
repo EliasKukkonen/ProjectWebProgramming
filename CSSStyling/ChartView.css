@@ -1,3 +1,5 @@
+/*ChartView.css
+Styling the Chart View */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -17,7 +19,7 @@ h1#chart-title {
     max-width: 800px;
     margin: 20px 0;
     position: relative;
-    z-index: 1; /* Ensure charts are below the sidebar if any */
+    z-index: 1; 
 }
 
 .download-buttons {

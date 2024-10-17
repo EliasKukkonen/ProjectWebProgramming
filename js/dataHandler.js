@@ -1,6 +1,8 @@
 // js/dataHandler.js
 
 //File for handling all operations with data, 4 APIs therefor file is big.,
+//Code is from lectures.
+//Some small adjustements and problem resolving (especially) with global variables, ChatGPT.
 
 // Add global variables
 window.MunicipalityChange = {};
@@ -29,6 +31,7 @@ window.onEachFeature = async (feature, layer) => {
     window.MunicipalityChange[municipalityCode] = municipalityName;
 
     layer.on('click', async (e) => {
+        //Migration handling
         if (window.selectedDataType === 'migration') {
             let code = 'KU' + municipalityCode;
             let positiveMigrationValue = window.positiveMigrationData[code];
@@ -74,6 +77,7 @@ window.onEachFeature = async (feature, layer) => {
                 </div>`
             ).openPopup();
         } else if (window.selectedDataType === 'population') {
+            //Handling population
             const population = window.populationDataByMunicipality[municipalityCode];
 
             if (population === undefined) {
@@ -91,6 +95,7 @@ window.onEachFeature = async (feature, layer) => {
                 </div>`
             ).openPopup();
         } else if (window.selectedDataType === 'employment') {
+            //Handling employment
             const employmentRate = window.employmentRateByMunicipality[municipalityCode];
             const unemploymentRate = window.unemploymentRateByMunicipality[municipalityCode];
             const dependencyRatio = window.dependencyRatioByMunicipality[municipalityCode];
@@ -120,6 +125,7 @@ window.onEachFeature = async (feature, layer) => {
 
 /**
  * Function to determine style based on selected data type
+ * As well color grading
  */
 window.getStyle = (feature) => {
     const municipalityCodeRaw = feature.properties.kunta;
@@ -174,6 +180,7 @@ window.getStyle = (feature) => {
             };
         }
     } else if (window.selectedDataType === 'birth-death') {
+        //Styling logic for birth and death
         const births = window.birthDataByMunicipality[municipalityCode];
         const deaths = window.deathDataByMunicipality[municipalityCode];
 
@@ -196,6 +203,7 @@ window.getStyle = (feature) => {
             };
         }
     } else if (window.selectedDataType === 'employment') {
+        //Styling logic for employment
         const employmentRate = window.employmentRateByMunicipality[municipalityCode];
 
         if (employmentRate !== undefined) {
@@ -334,21 +342,21 @@ async function fetchPopulationData() {
                 "code": "Vuosi",
                 "selection": {
                     "filter": "item",
-                    "values": ["2021"] // Latest year
+                    "values": ["2021"] 
                 }
             },
             {
                 "code": "Alue",
                 "selection": {
                     "filter": "item",
-                    "values": [] // Will be filled after MunicipalityChange is populated
+                    "values": [] 
                 }
             },
             {
                 "code": "Tiedot",
                 "selection": {
                     "filter": "item",
-                    "values": ["vaesto"] // Total population data code
+                    "values": ["vaesto"] 
                 }
             }
         ],
@@ -361,7 +369,7 @@ async function fetchPopulationData() {
     }
 
     populationQuery.query[1].selection.values = Object.keys(window.MunicipalityChange).map(code => 'KU' + code);
-
+//Fetching population and debugging.
     try {
         const response = await fetch(url, {
             method: "POST",
@@ -394,7 +402,7 @@ window.processPopulationData = (populationData) => {
 
     Object.keys(areas).forEach((areaCode, idx) => {
         const code = areaCode.replace('KU', '');
-        const population = values[idx]; // Since we only have one year
+        const population = values[idx]; 
         window.populationDataByMunicipality[code] = population;
     });
 };
@@ -406,7 +414,7 @@ async function fetchAllBirthAndDeathData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/synt/statfin_synt_pxt_12dy.px";
 
     // Define the latest year
-    const latestYear = "2021"; // Update this if needed
+    const latestYear = "2021"; 
 
     const birthQuery = {
         "query": [
@@ -476,7 +484,7 @@ async function fetchAllBirthAndDeathData() {
         }
         return await response.json();
     };
-
+//Debugging
     try {
         const [birthData, deathData] = await Promise.all([
             fetchData(birthQuery),
@@ -504,7 +512,7 @@ async function fetchAllBirthAndDeathData() {
         });
 
         console.log('Birth and Death data fetched and processed.');
-
+//Debugging
     } catch (error) {
         console.error('Error fetching birth and death data:', error);
     }
@@ -514,7 +522,7 @@ async function fetchAllBirthAndDeathData() {
  * Function to fetch employment-related data
  */
 async function fetchEmploymentData() {
-    const employmentDataURL = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/tyokay/statfin_tyokay_pxt_115x.px"; // Replace with the correct URL if different
+    const employmentDataURL = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/tyokay/statfin_tyokay_pxt_115x.px"; 
 
     const employmentQuery = {
         "query": [
@@ -522,7 +530,7 @@ async function fetchEmploymentData() {
                 "code": "Vuosi",
                 "selection": {
                     "filter": "item",
-                    "values": ["2021"] // Latest year; adjust if needed
+                    "values": ["2021"] 
                 }
             },
             {
@@ -536,13 +544,13 @@ async function fetchEmploymentData() {
                 "code": "Tiedot",
                 "selection": {
                     "filter": "item",
-                    "values": ["tyollisyysaste", "tyottomyysaste", "taloudellinenhuoltosuhde"] // Employment indicators
+                    "values": ["tyollisyysaste", "tyottomyysaste", "taloudellinenhuoltosuhde"] 
                 }
             }
         ],
         "response": { "format": "json-stat2" }
     };
-
+//Debugging
     try {
         const response = await fetch(employmentDataURL, {
             method: "POST",
@@ -578,8 +586,7 @@ window.processEmploymentData = (employmentData) => {
     const areas = areaDimension.index;
     const values = employmentData.value;
 
-    // Assuming the data is structured with Tiedot as the second dimension
-    // Find the index for each "Tiedot" variable
+
     const tiedotIndex = employmentData.dimension.Tiedot.category.index;
 
     Object.keys(areas).forEach((areaCode, idx) => {
@@ -587,17 +594,17 @@ window.processEmploymentData = (employmentData) => {
         const areaValueIndex = areas[areaCode];
 
        
-        const baseIndex = idx * 3; // 3 variables per municipality
+        const baseIndex = idx * 3; 
 
-        const employmentRate = values[baseIndex]; // tyollisyysaste
-        const unemploymentRate = values[baseIndex + 1]; // tyottomyysaste
-        const dependencyRatio = values[baseIndex + 2]; // taloudellinenhuoltosuhde
+        const employmentRate = values[baseIndex]; 
+        const unemploymentRate = values[baseIndex + 1]; 
+        const dependencyRatio = values[baseIndex + 2]; 
 
         window.employmentRateByMunicipality[code] = employmentRate;
         window.unemploymentRateByMunicipality[code] = unemploymentRate;
         window.dependencyRatioByMunicipality[code] = dependencyRatio;
     });
-
+//Debugging
     console.log('Employment data fetched and processed.');
 };
 
@@ -617,7 +624,6 @@ async function initializeData() {
     // Fetch Birth and Death Data for All Municipalities
     await fetchAllBirthAndDeathData();
 
-    // **Fetch Employment Data**
     const employmentData = await fetchEmploymentData();
     if (employmentData) {
         window.processEmploymentData(employmentData);
@@ -625,7 +631,6 @@ async function initializeData() {
         console.error('Employment data could not be fetched.');
     }
 
-    // Optionally, redraw the GeoJsonLayer to apply new styles
     if (window.GeoJsonLayer) {
         window.GeoJsonLayer.setStyle(window.getStyle);
     }

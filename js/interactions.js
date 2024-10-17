@@ -1,4 +1,5 @@
 // js/interactions.js
+//Interactions with the map
 
 // Function to navigate to the chart page with selected data type
 window.viewChart = (municipalityCode, municipalityName) => {
@@ -31,7 +32,7 @@ window.map.on('popupopen', function(e) {
 const migrationBox = document.getElementById('migration-data-box');
 const birthDeathBox = document.getElementById('birth-death-data-box');
 const populationBox = document.getElementById('population-data-box');
-const employmentBox = document.getElementById('employment-data-box'); // New Employment Box
+const employmentBox = document.getElementById('employment-data-box'); 
 
 const boxes = [migrationBox, birthDeathBox, populationBox, employmentBox].filter(box => box !== null);
 
@@ -56,7 +57,7 @@ function selectDataType(boxId) {
     } else if (boxId === 'population-data-box') {
         window.selectedDataType = 'population';
         showStatusMessage('Switched to Population Data');
-    } else if (boxId === 'employment-data-box') { // Handle Employment Selection
+    } else if (boxId === 'employment-data-box') { 
         window.selectedDataType = 'employment';
         showStatusMessage('Switched to Employment Data');
     }
@@ -71,6 +72,8 @@ function selectDataType(boxId) {
 }
 
 // Function to show status messages
+//To show if new data is enabled.
+//Designed with ChatGPT
 function showStatusMessage(message) {
     let statusDiv = document.getElementById('status-message');
     if (!statusDiv) {
@@ -99,6 +102,8 @@ function showStatusMessage(message) {
 }
 
 // Function to enable drag-and-drop
+//Source: https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API
+//All of the functions from the source above.
 function enableDragAndDrop() {
     boxes.forEach(box => {
         box.draggable = true; // Ensure the element is draggable
@@ -113,6 +118,7 @@ function enableDragAndDrop() {
 }
 
 // Function to disable drag-and-drop
+//Used in phone mode.
 function disableDragAndDrop() {
     boxes.forEach(box => {
         box.draggable = false; // Disable dragging
@@ -162,7 +168,7 @@ function handleBoxClick(e) {
 
 // Function to check if the current viewport is mobile
 function isMobileView() {
-    return window.innerWidth <= 768; // Adjust the breakpoint as needed
+    return window.innerWidth <= 768; 
 }
 
 // Function to initialize interactions based on viewport

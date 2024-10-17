@@ -85,13 +85,13 @@ async function buildChart() {
             const positiveMigrationURL = "https://statfin.stat.fi/PxWeb/sq/4bb2c735-1dc3-4c5e-bde7-2165df85e65f";
             const negativeMigrationURL = "https://statfin.stat.fi/PxWeb/sq/944493ca-ea4d-4fd9-a75c-4975192f7b6e";
 
-            // Fetch Positive and Negative Migration Data concurrently
+            
             const [positiveMigrationData, negativeMigrationData] = await Promise.all([
                 fetchData(positiveMigrationURL),
                 fetchData(negativeMigrationURL)
             ]);
 
-            // Extract datasets
+           
             const posDataset = positiveMigrationData.dataset;
             const negDataset = negativeMigrationData.dataset;
 
@@ -173,6 +173,7 @@ async function buildChart() {
 
 /**
  * Function to download the chart as an SVG file.
+ * Source: https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
  */
 function downloadChartSVG() {
     const chartContainer = document.getElementById('chart');
@@ -212,6 +213,7 @@ function downloadChartSVG() {
 
 /**
  * Function to download the chart as a PNG file.
+ * Source: https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
  */
 function downloadChartPNG() {
     const chartContainer = document.getElementById('chart');

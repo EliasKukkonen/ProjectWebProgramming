@@ -1,11 +1,8 @@
 // js/chartDataFetcher.js
+//Chart data fetching file.
 
-/**
- * Function to fetch data from a given URL.
- * @param {string} url - The API endpoint URL.
- * @param {Object} options - Fetch options (e.g., method, headers, body).
- * @returns {Object} - The JSON response from the API.
- */
+
+//Handle data from url
 async function fetchData(url, options = {}) {
     try {
         const response = await fetch(url, options);
@@ -22,10 +19,7 @@ async function fetchData(url, options = {}) {
     }
 }
 
-/**
- * Function to fetch Population data from the StatFin API.
- * @returns {Object} - The JSON response containing population data.
- */
+
 async function fetchPopulationData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/vaerak/statfin_vaerak_pxt_11rm.px";
     
@@ -73,10 +67,8 @@ async function fetchPopulationData() {
     return data;
 }
 
-/**
- * Function to fetch Birth and Death data from the StatFin API.
- * @returns {Object} - An object containing years, births, and deaths arrays.
- */
+
+
 async function fetchBirthAndDeathData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/synt/statfin_synt_pxt_12dy.px";
     
@@ -141,7 +133,7 @@ async function fetchBirthAndDeathData() {
         "response": { "format": "json-stat2" }
     };
 
-    // Fetch births and deaths concurrently
+    // Fetch births and deaths 
     const [birthData, deathData] = await Promise.all([
         fetchData(url, {
             method: "POST",
@@ -166,10 +158,9 @@ async function fetchBirthAndDeathData() {
     }
 }
 
-/**
- * Function to fetch Employment Rate data from the StatFin API.
- * @returns {Object} - An object containing employment, unemployment rates, and dependency ratio.
- */
+
+
+
 async function fetchEmploymentRateData() {
     const url = "https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/tyokay/statfin_tyokay_pxt_115x.px";
 
