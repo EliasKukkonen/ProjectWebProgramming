@@ -1,5 +1,7 @@
 // js/dataHandler.js
 
+//File for handling all operations with data, 4 APIs therefor file is big.,
+
 // Add global variables
 window.MunicipalityChange = {};
 window.positiveMigrationData = {};
@@ -243,25 +245,25 @@ function getColorForPopulation(population) {
  * Function to determine color based on net birth-death
  */
 function getColorForBirthDeath(netChange) {
-    return netChange > 1000 ? '#006400' : // Dark Green for high positive
-           netChange > 500  ? '#228B22' : // Forest Green
-           netChange > 0    ? '#32CD32' : // Lime Green
-           netChange > -500 ? '#FFD700' : // Gold for slight negative
-           netChange > -1000? '#FFA500' : // Orange
-           netChange > -2000? '#FF8C00' : // Dark Orange
-                                 '#FF0000';  // Red for high negative
+    return netChange > 1000 ? '#006400' : 
+           netChange > 500  ? '#228B22' : 
+           netChange > 0    ? '#32CD32' : 
+           netChange > -500 ? '#FFD700' : 
+           netChange > -1000? '#FFA500' : 
+           netChange > -2000? '#FF8C00' : 
+                                 '#FF0000';  
 }
 
 /**
  * Function to determine color based on employment rate
  */
 function getColorForEmployment(employmentRate) {
-    return employmentRate > 80 ? '#006400' : // Dark Green for high employment
-           employmentRate > 60 ? '#228B22' : // Forest Green
-           employmentRate > 40 ? '#32CD32' : // Lime Green
-           employmentRate > 20 ? '#FFD700' : // Gold for moderate employment
-           employmentRate > 0  ? '#FFA500' : // Orange
-                                 '#FF0000';  // Red for very low employment
+    return employmentRate > 80 ? '#006400' : 
+           employmentRate > 60 ? '#228B22' : 
+           employmentRate > 40 ? '#32CD32' : 
+           employmentRate > 20 ? '#FFD700' : 
+           employmentRate > 0  ? '#FFA500' : 
+                                 '#FF0000';  
 }
 
 /**
@@ -600,227 +602,6 @@ window.processEmploymentData = (employmentData) => {
 };
 
 /**
- * Function to determine style based on selected data type
- */
-window.getStyle = (feature) => {
-    const municipalityCodeRaw = feature.properties.kunta;
-    const municipalityCode = municipalityCodeRaw.padStart(3, '0');
-
-    if (window.selectedDataType === 'population') {
-        const population = window.populationDataByMunicipality[municipalityCode];
-
-        if (population !== undefined) {
-            // Define a color scale based on population
-            let color = getColorForPopulation(population);
-
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: color,
-                fillOpacity: 0.7
-            };
-        } else {
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: '#ccc',
-                fillOpacity: 0.7
-            };
-        }
-    } else if (window.selectedDataType === 'migration') {
-        // Styling logic for migration data
-        const municipalityCodeFull = 'KU' + municipalityCode;
-        const positiveMigrationValue = window.positiveMigrationData[municipalityCodeFull];
-        const negativeMigrationValue = window.negativeMigrationData[municipalityCodeFull];
-
-        if (positiveMigrationValue !== undefined && negativeMigrationValue !== undefined) {
-            let ratio = positiveMigrationValue / negativeMigrationValue;
-
-            let hue = Math.pow(ratio, 3) * 60;
-            hue = Math.min(hue, 120);
-
-            const color = `hsl(${hue}, 75%, 50%)`;
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: color,
-                fillOpacity: 0.7
-            };
-        } else {
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: '#ccc',
-                fillOpacity: 0.7
-            };
-        }
-    } else if (window.selectedDataType === 'birth-death') {
-        const births = window.birthDataByMunicipality[municipalityCode];
-        const deaths = window.deathDataByMunicipality[municipalityCode];
-
-        if (births !== undefined && deaths !== undefined) {
-            const netChange = births - deaths;
-            const color = getColorForBirthDeath(netChange);
-
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: color,
-                fillOpacity: 0.7
-            };
-        } else {
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: '#ccc',
-                fillOpacity: 0.7
-            };
-        }
-    } else if (window.selectedDataType === 'employment') {
-        const employmentRate = window.employmentRateByMunicipality[municipalityCode];
-
-        if (employmentRate !== undefined) {
-            // Define a color scale based on employment rate
-            let color = getColorForEmployment(employmentRate);
-
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: color,
-                fillOpacity: 0.7
-            };
-        } else {
-            return {
-                weight: 1,
-                color: 'black',
-                fillColor: '#ccc',
-                fillOpacity: 0.7
-            };
-        }
-    } else {
-        // Default style
-        return {
-            weight: 1,
-            color: 'black',
-            fillColor: '#ccc',
-            fillOpacity: 0.7
-        };
-    }
-};
-
-/**
- * Function to determine color based on population
- */
-function getColorForPopulation(population) {
-    return population > 100000 ? '#800026' :
-           population > 50000  ? '#BD0026' :
-           population > 20000  ? '#E31A1C' :
-           population > 10000  ? '#FC4E2A' :
-           population > 5000   ? '#FD8D3C' :
-           population > 2000   ? '#FEB24C' :
-           population > 1000   ? '#FED976' :
-                                 '#FFEDA0';
-}
-
-/**
- * Function to determine color based on net birth-death
- */
-function getColorForBirthDeath(netChange) {
-    return netChange > 1000 ? '#006400' : // Dark Green for high positive
-           netChange > 500  ? '#228B22' : // Forest Green
-           netChange > 0    ? '#32CD32' : // Lime Green
-           netChange > -500 ? '#FFD700' : // Gold for slight negative
-           netChange > -1000? '#FFA500' : // Orange
-           netChange > -2000? '#FF8C00' : // Dark Orange
-                                 '#FF0000';  // Red for high negative
-}
-
-/**
- * Function to determine color based on employment rate
- */
-function getColorForEmployment(employmentRate) {
-    return employmentRate > 80 ? '#006400' : // Dark Green for high employment
-           employmentRate > 60 ? '#228B22' : // Forest Green
-           employmentRate > 40 ? '#32CD32' : // Lime Green
-           employmentRate > 20 ? '#FFD700' : // Gold for moderate employment
-           employmentRate > 0  ? '#FFA500' : // Orange
-                                 '#FF0000';  // Red for very low employment
-}
-
-
-function addLegend() {
-    window.legend = L.control({ position: 'bottomright' });
-
-    window.legend.onAdd = function (map) {
-        const div = L.DomUtil.create('div', 'info legend');
-
-        if (window.selectedDataType === 'birth-death') {
-            div.innerHTML += '<strong>Net Birth-Death</strong><br>';
-            const gradesBD = [-2000, -1000, -500, 0, 500, 1000];
-            const labelsBD = [];
-
-            for (let i = 0; i < gradesBD.length; i++) {
-                const from = gradesBD[i];
-                const to = gradesBD[i + 1];
-
-                labelsBD.push(
-                    '<i style="background:' + getColorForBirthDeath(from + 1) + '"></i> ' +
-                    from + (to ? '&ndash;' + to : '+'));
-            }
-
-            div.innerHTML += labelsBD.join('<br>');
-        } else if (window.selectedDataType === 'employment') {
-            div.innerHTML += '<strong>Employment Rate (%)</strong><br>';
-            const gradesEmp = [0, 20, 40, 60, 80, 100];
-            const labelsEmp = [];
-
-            for (let i = 0; i < gradesEmp.length; i++) {
-                const from = gradesEmp[i];
-                const to = gradesEmp[i + 1];
-
-                labelsEmp.push(
-                    '<i style="background:' + getColorForEmployment(from + 1) + '"></i> ' +
-                    from + (to ? '&ndash;' + to : '+'));
-            }
-
-            div.innerHTML += labelsEmp.join('<br>');
-        } else {
-            // Existing legends for other data types
-            div.innerHTML += '<strong>Map Legend</strong><br>';
-            // Add legends for 'population' and 'migration' as needed
-
-            if (window.selectedDataType === 'population') {
-                div.innerHTML += '<strong>Population</strong><br>';
-                const gradesPop = [0, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
-                const labelsPop = [];
-
-                for (let i = 0; i < gradesPop.length; i++) {
-                    const from = gradesPop[i];
-                    const to = gradesPop[i + 1];
-
-                    labelsPop.push(
-                        '<i style="background:' + getColorForPopulation(from + 1) + '"></i> ' +
-                        from + (to ? '&ndash;' + to : '+'));
-                }
-
-                div.innerHTML += labelsPop.join('<br>');
-            }
-
-            if (window.selectedDataType === 'migration') {
-                div.innerHTML += '<strong>Migration Ratio</strong><br>';
-                // Assuming hue-based colors; provide a description or a gradient
-                div.innerHTML += '<i style="background: hsl(0, 75%, 50%)"></i> High Out-Migration<br>';
-                div.innerHTML += '<i style="background: hsl(120, 75%, 50%)"></i> High In-Migration<br>';
-            }
-        }
-
-        return div;
-    };
-
-    window.legend.addTo(window.map);
-}
-
-/**
  * Initialize Data Fetching and Processing
  */
 async function initializeData() {
@@ -848,9 +629,7 @@ async function initializeData() {
     if (window.GeoJsonLayer) {
         window.GeoJsonLayer.setStyle(window.getStyle);
     }
-
-    // Optionally, add a legend if handling "birth-death" or "employment"
-    addLegend();
+    
 }
 
 // Start data initialization

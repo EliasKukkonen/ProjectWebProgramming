@@ -5,48 +5,64 @@
  */
 async function buildChart() {
     try {
+        // Ensure global variables are set
+        if (!window.selectedDataType || !window.selectedMunicipalityName || !window.selectedMunicipalityCode) {
+            throw new Error('Selected data type or municipality details are not set.');
+        }
+
+        // Clear previous chart(s)
+        const chartContainer = document.getElementById('chart');
+        chartContainer.innerHTML = ''; // Remove existing charts
+
+        let chartData;
+        let chartOptions = {
+            title: `Data for ${window.selectedMunicipalityName}`,
+            data: {},
+            type: 'line', // Default chart type
+            height: 450,
+            colors: ['#7cd6fd'],
+            axisOptions: {
+                xIsSeries: 1
+            }
+        };
+
         if (window.selectedDataType === 'population') {
             // Fetch Population Data
             const populationData = await fetchPopulationData();
 
-            // **Corrected Data Access**
-            // Extract years and population values correctly
+            // Corrected Data Access
             const years = Object.values(populationData.dimension.Vuosi.category.label);
             const populationValues = populationData.value;
 
             // Prepare the chart data
-            const chartData = {
+            chartData = {
                 labels: years,
                 datasets: [
                     { name: "Population", values: populationValues, chartType: "line" }
                 ]
             };
 
-            // Create the Population Line Chart
-            new frappe.Chart("#chart", {
+            chartOptions = {
+                ...chartOptions,
                 title: `Population in ${window.selectedMunicipalityName}`,
                 data: chartData,
-                type: 'line', // Line chart type
-                height: 450,
-                colors: ['#7cd6fd'],
-                // Ensuring responsiveness by setting width to 100%
-                axisOptions: {
-                    xIsSeries: 1
-                }
-            });
+                type: 'line',
+                colors: ['#7cd6fd']
+            };
+
+            new frappe.Chart("#chart", chartOptions);
 
         } else if (window.selectedDataType === 'birth-death') {
             // Fetch Birth and Death Data
             const birthDeathData = await fetchBirthAndDeathData();
 
-            // **No Change Needed Here** (Assuming data is correctly fetched and structured)
             // Extract years, births, and deaths
             const years = birthDeathData.years;
             const births = birthDeathData.births;
             const deaths = birthDeathData.deaths;
 
             // Prepare the chart data
-            const chartData = {
+            chartData = {
                 labels: years,
                 datasets: [
                     { name: "Births", values: births, chartType: "bar" },
@@ -54,17 +70,15 @@ async function buildChart() {
                 ]
             };
 
-            // Create the Birth and Death Mixed Bar Chart
-            new frappe.Chart("#chart", {
+            chartOptions = {
+                ...chartOptions,
                 title: `Births and Deaths in ${window.selectedMunicipalityName}`,
                 data: chartData,
-                type: 'bar', // Mixed chart type
-                height: 450,
-                colors: ['#63d0ff', '#363636'],
-                axisOptions: {
-                    xIsSeries: 1
-                }
-            });
+                type: 'bar',
+                colors: ['#63d0ff', '#363636']
+            };
+
+            new frappe.Chart("#chart", chartOptions);
 
         } else if (window.selectedDataType === 'migration') {
             // Migration Data URLs
@@ -95,7 +109,7 @@ async function buildChart() {
             const negMigrants = negDataset.value[negAreaIndex];
 
             // Prepare data for the pie chart
-            const chartData = {
+            chartData = {
                 labels: ["In-migration", "Out-migration"],
                 datasets: [
                     {
@@ -105,14 +119,15 @@ async function buildChart() {
                 ]
             };
 
-            // Create the Migration Pie Chart
-            new frappe.Chart("#chart", {
+            chartOptions = {
+                ...chartOptions,
                 title: `Migration Statistics in ${window.selectedMunicipalityName}`,
                 data: chartData,
-                type: 'pie', // Pie chart type
-                height: 450,
+                type: 'pie',
                 colors: ['#00a86b', '#ff7f50']
-            });
+            };
+
+            new frappe.Chart("#chart", chartOptions);
 
         } else if (window.selectedDataType === 'employment') {
             // Fetch Employment Data
@@ -124,52 +139,32 @@ async function buildChart() {
 
             // Prepare data for Employment Rate and Unemployment Rate
             const chartDataRates = {
-                labels: ["Employment Rate (%)", "Unemployment Rate (%)"],
+                labels: ["Employment Rate (%)", "Unemployment Rate (%)", "Dependency Ratio"],
                 datasets: [
                     {
-                        values: [employmentRate, unemploymentRate],
-                        colors: ['#1E90FF', '#FF6347']
+                        name: "Metrics",
+                        values: [employmentRate, unemploymentRate, dependencyRatio],
+                        colors: ['#1E90FF', '#FF6347', '#8A2BE2']
                     }
                 ]
             };
 
-            // Create the Employment Rates Pie Chart
-            new frappe.Chart("#chart-rates", {
+            chartOptions = {
+                ...chartOptions,
                 title: `Employment Statistics in ${window.selectedMunicipalityName} (2021)`,
                 data: chartDataRates,
-                type: 'pie', // Pie chart type
-                height: 450,
-                colors: ['#1E90FF', '#FF6347']
-            });
-
-            // Prepare data for Dependency Ratio
-            const chartDataDependency = {
-                labels: ["Dependency Ratio"],
-                datasets: [
-                    {
-                        values: [dependencyRatio],
-                        colors: ['#8A2BE2']
-                    }
-                ]
+                type: 'bar',
+                colors: ['#1E90FF', '#FF6347', '#8A2BE2'],
             };
 
-            // Create the Dependency Ratio Gauge Chart (Using Bar Chart as Frappe doesn't have Gauge)
-            new frappe.Chart("#chart-dependency", {
-                title: `Dependency Ratio in ${window.selectedMunicipalityName} (2021)`,
-                data: chartDataDependency,
-                type: 'bar', // Using bar chart to represent single value
-                height: 450,
-                colors: ['#8A2BE2'],
-                axisOptions: {
-                    xIsSeries: 1
-                }
-            });
-
+            new frappe.Chart("#chart", chartOptions);
         } else {
             // Default or unknown data type
             alert('Unknown data type selected.');
             console.warn('Selected Data Type:', window.selectedDataType);
+            return;
         }
+
     } catch (error) {
         console.error('Error building chart:', error);
         alert('An error occurred while building the chart.');
@@ -188,6 +183,7 @@ function downloadChartSVG() {
         let source = serializer.serializeToString(svgElement);
 
         // Add namespaces if they are missing
+        //ChatGPT helped in defining all sources-
         if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
@@ -226,6 +222,7 @@ function downloadChartPNG() {
         let source = serializer.serializeToString(svgElement);
 
         // Add namespaces if they are missing
+        //ChatGPT helped in defining all sources-
         if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
@@ -272,7 +269,7 @@ function downloadChartPNG() {
 }
 
 /**
- * Function to build the chart and attach download listeners when the page is fully loaded.
+ * Function to download the chart and attach download listeners when the page is fully loaded.
  */
 document.addEventListener('DOMContentLoaded', async () => {
     await buildChart();
@@ -283,20 +280,20 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Function to attach event listeners to existing download buttons.
  */
 function attachDownloadListeners() {
-    const downloadPngButton = document.getElementById('download-chart-png');
-    const downloadSvgButton = document.getElementById('download-chart-svg');
+    const downloadPngButton = document.querySelector('.download-buttons button:nth-child(1)');
+    const downloadSvgButton = document.querySelector('.download-buttons button:nth-child(2)');
     const navigationButton = document.getElementById('navigation');
 
     if (downloadPngButton) {
         downloadPngButton.addEventListener('click', downloadChartPNG);
     } else {
-        console.warn('Download PNG button with ID "download-chart-png" not found.');
+        console.warn('Download PNG button not found.');
     }
 
     if (downloadSvgButton) {
         downloadSvgButton.addEventListener('click', downloadChartSVG);
     } else {
-        console.warn('Download SVG button with ID "download-chart-svg" not found.');
+        console.warn('Download SVG button not found.');
     }
 
     if (navigationButton) {
@@ -311,5 +308,16 @@ function attachDownloadListeners() {
         });
     } else {
         console.warn('Navigation button with ID "navigation" not found.');
+    }
+}
+
+/**
+ * Function to navigate back.
+ */
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = 'index.html';
     }
 }
