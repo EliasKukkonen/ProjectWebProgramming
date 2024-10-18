@@ -305,7 +305,7 @@ function attachDownloadListeners() {
                 window.history.back(); // Navigate back to the previous page
             } else {
                 // If no history, navigate to the main page directly
-                window.location.href = 'index.html';
+                window.location.href = 'app.html';
             }
         });
     } else {
@@ -320,6 +320,6 @@ function goBack() {
     if (window.history.length > 1) {
         window.history.back();
     } else {
-        window.location.href = 'index.html';
+        window.location.href = 'app.html';
     }
 }
